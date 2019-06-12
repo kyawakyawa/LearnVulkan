@@ -1,4 +1,4 @@
-# Drawing A Triangle->Setup->Base Code
+# Drawing A Triangle->Setup->Instance
 ## usage
 ### Linux or Mac
 ```
