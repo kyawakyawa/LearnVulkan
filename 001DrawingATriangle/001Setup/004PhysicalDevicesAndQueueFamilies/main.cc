@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <optional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -24,6 +25,14 @@ constexpr bool kEnableValidationLayers = true;
     throw std::runtime_error(m);                                                            \
   }                                                                                         \
 }
+
+struct QueueuFamilyIndices {
+  std::optional<uint32_t> graphics_family;
+
+  bool IsComplete() {
+    return graphics_family.has_value();
+  }
+};
 
 class HelloTriangleApplication {
 public:
@@ -241,9 +250,80 @@ private:
 
     window = glfwCreateWindow(WIDTH_, HEIGHT_, "Vulkan", nullptr, nullptr);
   }
+
+  // 使用可能な物理デバイスを調べ、一つ取得する
+  void PickPhysicalDevice() {
+    uint32_t device_count = 0;
+
+    vkEnumeratePhysicalDevices(
+      /*VkInstance instance =*/ instance_,
+      /*uint32_t *pPhysicalDeviceCount =*/ &device_count,
+      /*VkPhysicalDevice *pPhysicalDevices =*/ nullptr // nullptrを渡すと数を取得できる
+    );
+
+    if (device_count == 0) {
+      throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(device_count);
+    vkEnumeratePhysicalDevices(
+      /*VkInstance instance =*/ instance_,
+      /*uint32_t *pPhysicalDeviceCount =*/ &device_count,
+      /*VkPhysicalDevice *pPhysicalDevices =*/ devices.data()// ここで指定したポインタに物理デバイスの情報を入れる
+    );
+
+    for (const auto& device : devices) {
+      if (IsDeviceSuitable(device)) {
+        physical_device = device;
+        break;
+      }
+    }
+
+    if (physical_device == VK_NULL_HANDLE) {
+      throw std::runtime_error("failed to find a suitable GPU!");
+    }
+  }
+
+  bool IsDeviceSuitable(VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties device_properties;
+    VkPhysicalDeviceFeatures device_features;
+
+    vkGetPhysicalDeviceProperties(device, &device_properties);
+    vkGetPhysicalDeviceFeatures(device, &device_features);
+
+    const bool condition0 = device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    const bool condition1 = device_features.geometryShader;
+
+    QueueuFamilyIndices indices = FindQueueFamilies(device);
+
+    return condition0 && condition1 && indices.IsComplete();
+  }
+
+  QueueuFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
+    QueueuFamilyIndices indices;
+
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+    int i = 0;
+    for (const auto& queue_family : queue_families) {
+      if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        indices.graphics_family = 1;
+        break;
+      }
+      i++;
+    }
+
+    return indices;
+  }
+
   void InitVulkan() {
     CreateInstance();
     SetupDebugMessenger();
+    PickPhysicalDevice();
   }
 
   void MainLoop() {
@@ -274,6 +354,9 @@ private:
   VkInstance instance_;
 
   VkDebugUtilsMessengerEXT debug_messenger_;
+
+  // 物理デバイス 今回は一つのみ扱う
+  VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 };
 
 int main() {
