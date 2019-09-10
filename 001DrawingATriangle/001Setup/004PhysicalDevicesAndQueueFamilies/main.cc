@@ -1,10 +1,10 @@
 #include <vulkan/vulkan.h>
 
 #include <iostream>
-#include <string>
-#include <stdexcept>
-#include <vector>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -18,20 +18,20 @@ constexpr bool kEnableValidationLayers = true;
 #endif
 
 // Vulkan のAPIが返す引数をもらってエラーチェックを行う
-#define VK_CHECK_RESULT(f, m){                                                              \
-  VkResult res = (f);                                                                       \
-  if (res != VK_SUCCESS) {                                                                  \
-    fprintf(stderr, "Fatal : VkResult is %d in %s at line %d\n", res,  __FILE__, __LINE__); \
-    throw std::runtime_error(m);                                                            \
-  }                                                                                         \
-}
+#define VK_CHECK_RESULT(f, m)                                           \
+  {                                                                     \
+    VkResult res = (f);                                                 \
+    if (res != VK_SUCCESS) {                                            \
+      fprintf(stderr, "Fatal : VkResult is %d in %s at line %d\n", res, \
+              __FILE__, __LINE__);                                      \
+      throw std::runtime_error(m);                                      \
+    }                                                                   \
+  }
 
 struct QueueuFamilyIndices {
   std::optional<uint32_t> graphics_family;
 
-  bool IsComplete() {
-    return graphics_family.has_value();
-  }
+  bool IsComplete() { return graphics_family.has_value(); }
 };
 
 class HelloTriangleApplication {
@@ -45,10 +45,10 @@ public:
 
 private:
   void CreateInstance() {
-
     // ValidationLayerが有効な時にValidation Layerがサポートされているか確認
     if (kEnableValidationLayers && !CheckValidationLayerSupport()) {
-      throw std::runtime_error("Validation Layerが有効ですが、見つかりませんでした");
+      throw std::runtime_error(
+          "Validation Layerが有効ですが、見つかりませんでした");
     }
 
     // アプリケーションの情報を入力
@@ -82,27 +82,30 @@ private:
     // Validation Layers の情報を入れる
     VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
     if constexpr (kEnableValidationLayers) {
-      create_info.enabledLayerCount   = static_cast<uint32_t>(validation_layers_.size());
+      create_info.enabledLayerCount =
+          static_cast<uint32_t>(validation_layers_.size());
       create_info.ppEnabledLayerNames = validation_layers_.data();
 
       // デバックメッセンジャーの情報を入力する
       PopulateDebugMessengerCreateInfo(debug_create_info);
-      create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debug_create_info;
+      create_info.pNext =
+          (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
     } else {
       create_info.enabledLayerCount = 0;
     }
 
     // 拡張機能
     auto extensions = GetRequiredExtensions();
-    create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    create_info.enabledExtensionCount =
+        static_cast<uint32_t>(extensions.size());
     create_info.ppEnabledExtensionNames = extensions.data();
 
     VK_CHECK_RESULT(
-      vkCreateInstance(/*const VkInstanceCreateInfo *pCreateInfo=*/&create_info ,
-                       /*const VkAllocationCallbacks *pAllocator=*/nullptr,
-                       /*VkInstance *pInstance                  =*/&instance_),
-      "Instanceの作成に失敗しました"
-    );
+        vkCreateInstance(
+            /*const VkInstanceCreateInfo *pCreateInfo=*/&create_info,
+            /*const VkAllocationCallbacks *pAllocator=*/nullptr,
+            /*VkInstance *pInstance                  =*/&instance_),
+        "Instanceの作成に失敗しました");
 
     if constexpr (kEnableOutput) {
       fprintf(stderr, "\n---インスタンスを作成しました---\n\n");
@@ -110,15 +113,15 @@ private:
 
     uint32_t extension_count = 0;
     // 拡張機能のプロパティを取得する
-    vkEnumerateInstanceExtensionProperties(/*const char *pLayerName            =*/nullptr,
-                                           /*uint32_t *pPropertyCount          =*/&extension_count,
-                                           /*VkExtensionProperties *pProperties=*/nullptr
-                                           );
+    vkEnumerateInstanceExtensionProperties(
+        /*const char *pLayerName            =*/nullptr,
+        /*uint32_t *pPropertyCount          =*/&extension_count,
+        /*VkExtensionProperties *pProperties=*/nullptr);
     std::vector<VkExtensionProperties> extension_properties(extension_count);
-    vkEnumerateInstanceExtensionProperties(/*const char *pLayerName            =*/nullptr,
-                                           /*uint32_t *pPropertyCount          =*/&extension_count,
-                                           /*VkExtensionProperties *pProperties=*/extension_properties.data()
-                                          );
+    vkEnumerateInstanceExtensionProperties(
+        /*const char *pLayerName            =*/nullptr,
+        /*uint32_t *pPropertyCount          =*/&extension_count,
+        /*VkExtensionProperties *pProperties=*/extension_properties.data());
     if constexpr (kEnableOutput) {
       fprintf(stderr, "---拡張機能 リスト---\n");
       for (const VkExtensionProperties& prop : extension_properties) {
@@ -130,15 +133,14 @@ private:
   bool CheckValidationLayerSupport() {
     uint32_t layer_count = 0;
     // nullptrを渡すとレイヤーの数を取得できる
-    vkEnumerateInstanceLayerProperties(/*uint32_t *pPropertyCount      =*/&layer_count,
-                                       /*VkLayerProperties *pProperties=*/nullptr
-    );
-
+    vkEnumerateInstanceLayerProperties(
+        /*uint32_t *pPropertyCount      =*/&layer_count,
+        /*VkLayerProperties *pProperties=*/nullptr);
 
     std::vector<VkLayerProperties> available_layers(layer_count);
-    vkEnumerateInstanceLayerProperties(/*uint32_t *pPropertyCount      =*/&layer_count,
-                                       /*VkLayerProperties *pProperties=*/available_layers.data()
-    );
+    vkEnumerateInstanceLayerProperties(
+        /*uint32_t *pPropertyCount      =*/&layer_count,
+        /*VkLayerProperties *pProperties=*/available_layers.data());
 
     if (kEnableOutput) {
       fprintf(stderr, "---Layer リスト---\n");
@@ -152,30 +154,31 @@ private:
       bool layer_found = false;
 
       for (const auto& layer_properties : available_layers) {
-          if (std::string(layer_name) == std::string(layer_properties.layerName)) {
-              layer_found = true;
-              break;
-          }
+        if (std::string(layer_name) ==
+            std::string(layer_properties.layerName)) {
+          layer_found = true;
+          break;
+        }
       }
 
       if (!layer_found) {
-          return false;
+        return false;
       }
     }
 
     return true;
   }
 
-// Validation Layer用のコールバック関数
-  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                                                      VkDebugUtilsMessageTypeFlagsEXT message_type,
-                                                      const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                      void* pUserData) {
-
-    fprintf(stderr, "validation layer: %s\n",pCallbackData->pMessage);
+  // Validation Layer用のコールバック関数
+  static VKAPI_ATTR VkBool32 VKAPI_CALL
+  DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                VkDebugUtilsMessageTypeFlagsEXT message_type,
+                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                void* pUserData) {
+    fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
 
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-    // Message is important enough to show
+      // Message is important enough to show
     }
 
     return VK_FALSE;
@@ -188,53 +191,70 @@ private:
     VkDebugUtilsMessengerCreateInfoEXT create_info = {};
     PopulateDebugMessengerCreateInfo(create_info);
 
-    if (CreateDebugUtilsMessengerEXT(instance_, &create_info, nullptr, &debug_messenger_) != VK_SUCCESS) {
+    if (CreateDebugUtilsMessengerEXT(instance_, &create_info, nullptr,
+                                     &debug_messenger_) != VK_SUCCESS) {
       throw std::runtime_error("failed to set up debug messenger!");
     }
   }
 
   // デバックメッセンジャーの情報を入力する
-  void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info) {
-    create_info = {};
+  void PopulateDebugMessengerCreateInfo(
+      VkDebugUtilsMessengerCreateInfoEXT& create_info) {
+    create_info       = {};
     create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    create_info.messageSeverity =
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     create_info.pfnUserCallback = DebugCallback;
- }
+  }
 
-// 利用する拡張機能を指定する
+  // 利用する拡張機能を指定する
   std::vector<const char*> GetRequiredExtensions() {
     uint32_t glfw_extension_count = 0;
     const char** glfw_extensions;
-    glfw_extensions = glfwGetRequiredInstanceExtensions(/*uint32_t *count = */&glfw_extension_count);
+    glfw_extensions = glfwGetRequiredInstanceExtensions(
+        /*uint32_t *count = */ &glfw_extension_count);
 
-    std::vector<const char*> extensions(glfw_extensions, glfw_extensions + glfw_extension_count);
+    std::vector<const char*> extensions(glfw_extensions,
+                                        glfw_extensions + glfw_extension_count);
 
     if (kEnableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+      extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     return extensions;
   }
 
   // デバックメッセンジャーの作成
-  VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(/*VkInstance instance =*/instance, 
-                                                                           /*const char *pName   =*/"vkCreateDebugUtilsMessengerEXT");
+  VkResult CreateDebugUtilsMessengerEXT(
+      VkInstance instance,
+      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        /*VkInstance instance =*/instance,
+        /*const char *pName   =*/"vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+      return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
+      return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
   }
 
   // デバックメッセンジャーの終了
-  void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger, const VkAllocationCallbacks* pAllocator) {
-      auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(/*VkInstance instance =*/instance, 
-                                                                           /*const char *pName   =*/"vkDestroyDebugUtilsMessengerEXT");
-      if (func != nullptr) {
-          func(instance, debug_messenger, pAllocator);
-      }
+  void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                     VkDebugUtilsMessengerEXT debug_messenger,
+                                     const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        /*VkInstance instance =*/instance,
+        /*const char *pName   =*/"vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+      func(instance, debug_messenger, pAllocator);
+    }
   }
 
   void InitWindow() {
@@ -256,9 +276,10 @@ private:
     uint32_t device_count = 0;
 
     vkEnumeratePhysicalDevices(
-      /*VkInstance instance =*/ instance_,
-      /*uint32_t *pPhysicalDeviceCount =*/ &device_count,
-      /*VkPhysicalDevice *pPhysicalDevices =*/ nullptr // nullptrを渡すと数を取得できる
+        /*VkInstance instance =*/instance_,
+        /*uint32_t *pPhysicalDeviceCount =*/&device_count,
+        /*VkPhysicalDevice *pPhysicalDevices =*/
+        nullptr  // nullptrを渡すと数を取得できる
     );
 
     if (device_count == 0) {
@@ -267,9 +288,10 @@ private:
 
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(
-      /*VkInstance instance =*/ instance_,
-      /*uint32_t *pPhysicalDeviceCount =*/ &device_count,
-      /*VkPhysicalDevice *pPhysicalDevices =*/ devices.data()// ここで指定したポインタに物理デバイスの情報を入れる
+        /*VkInstance instance =*/instance_,
+        /*uint32_t *pPhysicalDeviceCount =*/&device_count,
+        /*VkPhysicalDevice *pPhysicalDevices =*/
+        devices.data()  // ここで指定したポインタに物理デバイスの情報を入れる
     );
 
     for (const auto& device : devices) {
@@ -291,7 +313,9 @@ private:
     vkGetPhysicalDeviceProperties(device, &device_properties);
     vkGetPhysicalDeviceFeatures(device, &device_features);
 
-    const bool condition0 = device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    const bool condition0 =
+        device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
+        device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
     const bool condition1 = device_features.geometryShader;
 
     QueueuFamilyIndices indices = FindQueueFamilies(device);
@@ -303,14 +327,17 @@ private:
     QueueuFamilyIndices indices;
 
     uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                             nullptr);
 
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                             queue_families.data());
 
     int i = 0;
     for (const auto& queue_family : queue_families) {
-      if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      if (queue_family.queueCount > 0 &&
+          queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         indices.graphics_family = 1;
         break;
       }
@@ -346,8 +373,7 @@ private:
   const int HEIGHT_ = 600;
 
   const std::vector<const char*> validation_layers_ = {
-    "VK_LAYER_KHRONOS_validation"
-  };
+      "VK_LAYER_KHRONOS_validation"};
 
   GLFWwindow* window = nullptr;
 

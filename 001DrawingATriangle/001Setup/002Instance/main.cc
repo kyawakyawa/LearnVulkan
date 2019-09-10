@@ -1,26 +1,28 @@
 #include <vulkan/vulkan.h>
 
+#include <functional>
 #include <iostream>
 #include <stdexcept>
-#include <functional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #ifdef NDEBUG
-constexpr bool kEnableOutput           = false;
+constexpr bool kEnableOutput = false;
 #else
-constexpr bool kEnableOutput           = true;
+constexpr bool kEnableOutput = true;
 #endif
 
 // Vulkan のAPIが返す引数をもらってエラーチェックを行う
-#define VK_CHECK_RESULT(f, m){                                                              \
-  VkResult res = (f);                                                                       \
-  if (res != VK_SUCCESS) {                                                                  \
-    fprintf(stderr, "Fatal : VkResult is %d in %s at line %d\n", res,  __FILE__, __LINE__); \
-    throw std::runtime_error(m);                                                            \
-  }                                                                                         \
-}
+#define VK_CHECK_RESULT(f, m)                                           \
+  {                                                                     \
+    VkResult res = (f);                                                 \
+    if (res != VK_SUCCESS) {                                            \
+      fprintf(stderr, "Fatal : VkResult is %d in %s at line %d\n", res, \
+              __FILE__, __LINE__);                                      \
+      throw std::runtime_error(m);                                      \
+    }                                                                   \
+  }
 
 class HelloTriangleApplication {
 public:
@@ -62,14 +64,14 @@ private:
     }
 
     // レイヤーの数 (次でやるの今は0)
-    create_info. enabledLayerCount = 0;
+    create_info.enabledLayerCount = 0;
 
     VK_CHECK_RESULT(
-      vkCreateInstance(/*const VkInstanceCreateInfo *pCreateInfo=*/&create_info ,
-                       /*const VkAllocationCallbacks *pAllocator=*/nullptr,
-                       /*VkInstance *pInstance                  =*/&instance_),
-      "Instanceの作成に失敗しました"
-    );
+        vkCreateInstance(
+            /*const VkInstanceCreateInfo *pCreateInfo=*/&create_info,
+            /*const VkAllocationCallbacks *pAllocator=*/nullptr,
+            /*VkInstance *pInstance                  =*/&instance_),
+        "Instanceの作成に失敗しました");
 
     if constexpr (kEnableOutput) {
       fprintf(stderr, "\n---インスタンスを作成しました---\n\n");
@@ -77,15 +79,15 @@ private:
 
     uint32_t extension_count = 0;
     // 拡張機能のプロパティを取得する
-    vkEnumerateInstanceExtensionProperties(/*const char *pLayerName            =*/nullptr,
-                                           /*uint32_t *pPropertyCount          =*/&extension_count,
-                                           /*VkExtensionProperties *pProperties=*/nullptr
-                                           );
+    vkEnumerateInstanceExtensionProperties(
+        /*const char *pLayerName            =*/nullptr,
+        /*uint32_t *pPropertyCount          =*/&extension_count,
+        /*VkExtensionProperties *pProperties=*/nullptr);
     std::vector<VkExtensionProperties> extension_properties(extension_count);
-    vkEnumerateInstanceExtensionProperties(/*const char *pLayerName            =*/nullptr,
-                                           /*uint32_t *pPropertyCount          =*/&extension_count,
-                                           /*VkExtensionProperties *pProperties=*/extension_properties.data()
-                                          );
+    vkEnumerateInstanceExtensionProperties(
+        /*const char *pLayerName            =*/nullptr,
+        /*uint32_t *pPropertyCount          =*/&extension_count,
+        /*VkExtensionProperties *pProperties=*/extension_properties.data());
     if constexpr (kEnableOutput) {
       fprintf(stderr, "---拡張機能 リスト---\n");
       for (const VkExtensionProperties& prop : extension_properties) {
@@ -93,9 +95,6 @@ private:
       }
       fprintf(stderr, "\n\n");
     }
-
-
-
   }
   void InitWindow() {
     // GLFWの初期化
@@ -110,9 +109,7 @@ private:
 
     window = glfwCreateWindow(WIDTH_, HEIGHT_, "Vulkan", nullptr, nullptr);
   }
-  void InitVulkan() {
-    CreateInstance();
-  }
+  void InitVulkan() { CreateInstance(); }
 
   void MainLoop() {
     while (!glfwWindowShouldClose(window)) {

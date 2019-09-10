@@ -1,8 +1,8 @@
 #include <vulkan/vulkan.h>
 
+#include <functional>
 #include <iostream>
 #include <stdexcept>
-#include <functional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -30,8 +30,7 @@ private:
 
     window = glfwCreateWindow(WIDTH_, HEIGHT_, "Vulkan", nullptr, nullptr);
   }
-  void InitVulkan() {
-  }
+  void InitVulkan() {}
 
   void MainLoop() {
     while (!glfwWindowShouldClose(window)) {
