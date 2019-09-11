@@ -314,8 +314,16 @@ private:
     vkGetPhysicalDeviceFeatures(device, &device_features);
 
     const bool condition0 =
+        /* グラフィックカード */
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
+        /* 統合GPU */
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+      fprintf(stderr, "グラフィックカードが検出されました\n");
+    } else if (device_properties.deviceType ==
+               VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+      fprintf(stderr, "統合GPUが検出されました\n");
+    }
     const bool condition1 = device_features.geometryShader;
 
     QueueuFamilyIndices indices = FindQueueFamilies(device);
