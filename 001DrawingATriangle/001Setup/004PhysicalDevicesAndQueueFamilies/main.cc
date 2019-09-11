@@ -296,12 +296,12 @@ private:
 
     for (const auto& device : devices) {
       if (IsDeviceSuitable(device)) {
-        physical_device = device;
+        physical_device_ = device;
         break;
       }
     }
 
-    if (physical_device == VK_NULL_HANDLE) {
+    if (physical_device_ == VK_NULL_HANDLE) {
       throw std::runtime_error("failed to find a suitable GPU!");
     }
   }
@@ -390,7 +390,7 @@ private:
   VkDebugUtilsMessengerEXT debug_messenger_;
 
   // 物理デバイス 今回は一つのみ扱う
-  VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+  VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
 };
 
 int main() {
