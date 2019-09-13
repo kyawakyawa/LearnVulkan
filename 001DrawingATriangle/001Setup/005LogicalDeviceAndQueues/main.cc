@@ -175,7 +175,9 @@ private:
                 VkDebugUtilsMessageTypeFlagsEXT message_type,
                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* pUserData) {
-    fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
+    if (kEnableOutput) {
+      fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
+    }
 
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
       // Message is important enough to show
@@ -296,12 +298,12 @@ private:
 
     for (const auto& device : devices) {
       if (IsDeviceSuitable(device)) {
-        physical_device = device;
+        physical_device_ = device;
         break;
       }
     }
 
-    if (physical_device == VK_NULL_HANDLE) {
+    if (physical_device_ == VK_NULL_HANDLE) {
       throw std::runtime_error("failed to find a suitable GPU!");
     }
   }
@@ -318,10 +320,11 @@ private:
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
         /* 統合GPU */
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-    if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+    if (kEnableOutput &&
+        device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
       fprintf(stderr, "グラフィックカードが検出されました\n");
-    } else if (device_properties.deviceType ==
-               VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+    } else if (kEnableOutput && device_properties.deviceType ==
+                                    VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
       fprintf(stderr, "統合GPUが検出されました\n");
     }
     const bool condition1 = device_features.geometryShader;
@@ -331,13 +334,56 @@ private:
     return condition0 && condition1 && indices.IsComplete();
   }
 
+  void CreateLogicalDevice() {
+    // 作成するキューの指定
+    QueueuFamilyIndices indices = FindQueueFamilies(physical_device_);
+
+    VkDeviceQueueCreateInfo queue_create_info = {};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = indices.graphics_family.value();
+    queue_create_info.queueCount       = 1;
+
+    const float queue_priority         = 1.0f;  // [0.0f,1.0f]
+    queue_create_info.pQueuePriorities = &queue_priority;
+
+    // 使うDevice Feature を指定する(今回は何も指定しない)
+    VkPhysicalDeviceFeatures device_features = {};
+
+    // Logical Device の作成
+    VkDeviceCreateInfo create_info = {};
+    create_info.sType              = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    create_info.pQueueCreateInfos    = &queue_create_info;
+    create_info.queueCreateInfoCount = 1;
+
+    create_info.pEnabledFeatures = &device_features;
+
+    create_info.enabledExtensionCount = 0;
+
+    if (kEnableValidationLayers) {
+      create_info.enabledLayerCount =
+          static_cast<uint32_t>(validation_layers_.size());
+      create_info.ppEnabledLayerNames = validation_layers_.data();
+    } else {
+      create_info.enabledLayerCount = 0;
+    }
+
+    if (vkCreateDevice(physical_device_, &create_info, nullptr, &device_) !=
+        VK_SUCCESS) {
+      throw std::runtime_error("failed to create logical device!");
+    }
+
+    // キューの指定
+    vkGetDeviceQueue(device_, indices.graphics_family.value(), 0,
+                     &graphics_queue_);
+  }
+
   QueueuFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
     QueueuFamilyIndices indices;
 
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
                                              nullptr);
-
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
                                              queue_families.data());
@@ -346,7 +392,7 @@ private:
     for (const auto& queue_family : queue_families) {
       if (queue_family.queueCount > 0 &&
           queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        indices.graphics_family = 1;
+        indices.graphics_family = i;
         break;
       }
       i++;
@@ -359,6 +405,7 @@ private:
     CreateInstance();
     SetupDebugMessenger();
     PickPhysicalDevice();
+    CreateLogicalDevice();
   }
 
   void MainLoop() {
@@ -369,6 +416,7 @@ private:
   }
 
   void CleanUp() {
+    vkDestroyDevice(device_, nullptr);
     if (kEnableValidationLayers) {
       DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
     }
@@ -390,7 +438,12 @@ private:
   VkDebugUtilsMessengerEXT debug_messenger_;
 
   // 物理デバイス 今回は一つのみ扱う
-  VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+  VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
+
+  // 論理デバイス こちらも一つのみ扱う
+  VkDevice device_;
+
+  VkQueue graphics_queue_;
 };
 
 int main() {

@@ -175,7 +175,9 @@ private:
                 VkDebugUtilsMessageTypeFlagsEXT message_type,
                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* pUserData) {
-    fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
+    if (kEnableOutput) {
+      fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
+    }
 
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
       // Message is important enough to show
@@ -318,10 +320,11 @@ private:
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
         /* 統合GPU */
         device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-    if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+    if (kEnableOutput &&
+        device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
       fprintf(stderr, "グラフィックカードが検出されました\n");
-    } else if (device_properties.deviceType ==
-               VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+    } else if (kEnableOutput && device_properties.deviceType ==
+                                    VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
       fprintf(stderr, "統合GPUが検出されました\n");
     }
     const bool condition1 = device_features.geometryShader;
@@ -346,7 +349,7 @@ private:
     for (const auto& queue_family : queue_families) {
       if (queue_family.queueCount > 0 &&
           queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        indices.graphics_family = 1;
+        indices.graphics_family = i;
         break;
       }
       i++;
