@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -30,8 +31,11 @@ constexpr bool kEnableValidationLayers = true;
 
 struct QueueuFamilyIndices {
   std::optional<uint32_t> graphics_family;
+  std::optional<uint32_t> present_family;
 
-  bool IsComplete() { return graphics_family.has_value(); }
+  bool IsComplete() {
+    return graphics_family.has_value() && present_family.has_value();
+  }
 };
 
 class HelloTriangleApplication {
@@ -338,13 +342,21 @@ private:
     // 作成するキューの指定
     QueueuFamilyIndices indices = FindQueueFamilies(physical_device_);
 
-    VkDeviceQueueCreateInfo queue_create_info = {};
-    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queue_create_info.queueFamilyIndex = indices.graphics_family.value();
-    queue_create_info.queueCount       = 1;
+    std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+    std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(),
+                                                indices.present_family.value()};
 
-    const float queue_priority         = 1.0f;  // [0.0f,1.0f]
-    queue_create_info.pQueuePriorities = &queue_priority;
+    const float queue_priority = 1.0f;  // [0.0f,1.0f]
+
+    for (uint32_t queue_family : unique_queue_families) {
+      VkDeviceQueueCreateInfo queue_create_info = {};
+      queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      queue_create_info.queueFamilyIndex = queue_family;
+      queue_create_info.queueCount       = 1;
+      queue_create_info.pQueuePriorities = &queue_priority;
+
+      queue_create_infos.emplace_back(queue_create_info);
+    }
 
     // 使うDevice Feature を指定する(今回は何も指定しない)
     VkPhysicalDeviceFeatures device_features = {};
@@ -353,8 +365,9 @@ private:
     VkDeviceCreateInfo create_info = {};
     create_info.sType              = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    create_info.pQueueCreateInfos    = &queue_create_info;
-    create_info.queueCreateInfoCount = 1;
+    create_info.queueCreateInfoCount =
+        static_cast<uint32_t>(queue_create_infos.size());
+    create_info.pQueueCreateInfos = queue_create_infos.data();
 
     create_info.pEnabledFeatures = &device_features;
 
@@ -373,9 +386,12 @@ private:
       throw std::runtime_error("failed to create logical device!");
     }
 
-    // キューの指定
+    // Graphics Queueのハンドルを取得 (graphics_queue_)
     vkGetDeviceQueue(device_, indices.graphics_family.value(), 0,
                      &graphics_queue_);
+    // Presentation Queueのハンドルを取得 (present_queue_)
+    vkGetDeviceQueue(device_, indices.present_family.value(), 0,
+                     &present_queue_);
   }
 
   QueueuFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
@@ -390,9 +406,23 @@ private:
 
     int i = 0;
     for (const auto& queue_family : queue_families) {
+      // Graphics Queue Family
       if (queue_family.queueCount > 0 &&
           queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         indices.graphics_family = i;
+        break;
+      }
+    }
+
+    for (const auto& queue_family : queue_families) {
+      // Presentation Queue Family
+      {
+        VkBool32 presentation_support = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_,
+                                             &presentation_support);
+        if (queue_family.queueCount > 0 && presentation_support) {
+          indices.present_family = i;
+        }
         break;
       }
       i++;
@@ -456,6 +486,7 @@ private:
   VkDevice device_;
 
   VkQueue graphics_queue_;
+  VkQueue present_queue_;
 };
 
 int main() {
