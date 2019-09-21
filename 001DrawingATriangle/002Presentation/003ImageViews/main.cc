@@ -563,6 +563,34 @@ private:
     CreateLogicalDevice();
   }
 
+  void CreateImageViews() {
+    swap_chain_image_views_.resize(swap_chain_images_.size());
+    for (size_t i = 0; i < swap_chain_images_.size(); i++) {
+      VkImageViewCreateInfo create_info = {};
+      create_info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      create_info.image    = swap_chain_images_[i];
+      create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      create_info.format   = swap_chain_image_format_;
+
+      create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+      create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+      // イメージの目的や画像のどの部分にアクセスするかを指定する
+      create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      create_info.subresourceRange.baseMipLevel   = 0;
+      create_info.subresourceRange.levelCount     = 1;
+      create_info.subresourceRange.baseArrayLayer = 0;
+      create_info.subresourceRange.layerCount     = 1;
+
+      if (vkCreateImageView(device_, &create_info, nullptr,
+                            &swap_chain_image_views_[i]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image views!");
+      }
+    }
+  }
+
   void CreateSwapChain() {
     SwapChainSupportDetails swap_chain_support =
         QuerySwapChainSupport(physical_device_);
@@ -654,7 +682,11 @@ private:
   }
 
   void CleanUp() {
+    for (const auto image_view : swap_chain_image_views_) {
+      vkDestroyImageView(device_, image_view, nullptr);
+    }
     vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
+
     vkDestroyDevice(device_, nullptr);
     if (kEnableValidationLayers) {
       DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
@@ -679,6 +711,7 @@ private:
 
   VkSwapchainKHR swap_chain_;
   std::vector<VkImage> swap_chain_images_;
+  std::vector<VkImageView> swap_chain_image_views_;
   VkFormat swap_chain_image_format_;
   VkExtent2D swap_chain_extent_;
 
