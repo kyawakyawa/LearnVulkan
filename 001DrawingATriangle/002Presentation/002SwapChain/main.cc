@@ -561,6 +561,7 @@ private:
     CreateSurface();
     PickPhysicalDevice();
     CreateLogicalDevice();
+    CreateSwapChain();
   }
 
   void CreateSwapChain() {

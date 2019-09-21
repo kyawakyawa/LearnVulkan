@@ -561,6 +561,8 @@ private:
     CreateSurface();
     PickPhysicalDevice();
     CreateLogicalDevice();
+    CreateSwapChain();
+    CreateImageViews();
   }
 
   void CreateImageViews() {
