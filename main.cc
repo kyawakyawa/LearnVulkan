@@ -114,9 +114,8 @@ static std::vector<const char*> get_required_extensions() {
   return extensions;
 }
 
-static int init_vulkan([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
-                       VkInstance* pInstance,
-                       VkDebugUtilsMessengerEXT* pDebugMessenger) {
+static int create_instance(VkInstance* pInstance,
+                           VkDebugUtilsMessengerEXT* pDebugMessenger) {
   // Create Instance //////////////////////////////
 
   if (kEnableValidationLayers &&
@@ -183,6 +182,16 @@ static int init_vulkan([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
     }
   }
   // Fin Create Instance //////////////////////
+
+  return EXIT_SUCCESS;
+}
+
+static int init_vulkan([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
+                       VkInstance* pInstance,
+                       VkDebugUtilsMessengerEXT* pDebugMessenger) {
+  if (create_instance(pInstance, pDebugMessenger) != EXIT_SUCCESS) {
+    return EXIT_FAILURE;
+  }
   return EXIT_SUCCESS;
 }
 
