@@ -115,7 +115,8 @@ static std::vector<const char*> get_required_extensions() {
 }
 
 static int init_vulkan([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
-                       VkInstance* pInstance) {
+                       VkInstance* pInstance,
+                       VkDebugUtilsMessengerEXT* pDebugMessenger) {
   // Create Instance //////////////////////////////
 
   if (kEnableValidationLayers &&
@@ -170,11 +171,34 @@ static int init_vulkan([[maybe_unused]] int argc, [[maybe_unused]] char** argv,
     fprintf(stderr, "\n---Instance was created.---\n\n");
   }
 
-  /////////////////////////////////////////////////
+  // Set debug messenger
+  if constexpr (kEnableValidationLayers) {
+    auto func = PFN_vkCreateDebugUtilsMessengerEXT(vkGetInstanceProcAddr(
+        /*VkInstance instance =*/*pInstance,
+        /*const char *pName   =*/"vkCreateDebugUtilsMessengerEXT"));
+    if (func != nullptr) {
+      return func(*pInstance, &debug_create_info, nullptr, pDebugMessenger);
+    } else {
+      return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+  }
+  // Fin Create Instance //////////////////////
   return EXIT_SUCCESS;
 }
 
-static void clean_up(const VkInstance instance) {
+static void clean_up(const VkInstance instance,
+                     const VkDebugUtilsMessengerEXT debug_messenger) {
+  // Destroy Debug Messager
+  if (kEnableValidationLayers) {
+    // DestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
+    auto func = PFN_vkDestroyDebugUtilsMessengerEXT(vkGetInstanceProcAddr(
+        /*VkInstance instance =*/instance,
+        /*const char *pName   =*/"vkDestroyDebugUtilsMessengerEXT"));
+    if (func != nullptr) {
+      func(instance, debug_messenger, nullptr);
+    }
+  }
+
   vkDestroyInstance(instance, nullptr);
 }
 
@@ -188,11 +212,12 @@ static int app([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
       glfwCreateWindow(int(gWidth), int(gHeight), "Vulkan", nullptr, nullptr);
 
   VkInstance instance;
-  if (init_vulkan(argc, argv, &instance) != EXIT_SUCCESS) {
+  VkDebugUtilsMessengerEXT debug_messenger;
+  if (init_vulkan(argc, argv, &instance, &debug_messenger) != EXIT_SUCCESS) {
     return EXIT_FAILURE;
   }
 
-  clean_up(instance);
+  clean_up(instance, debug_messenger);
 
   glfwDestroyWindow(window);
   glfwTerminate();
